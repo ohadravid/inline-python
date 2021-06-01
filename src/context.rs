@@ -125,11 +125,12 @@ impl Context {
 		}
 	}
 
-	/// Add a wrapped #[pyfunction] or #[pymodule] using its own `__name__`.
+	/// Add a wrapped #[pyfunction] using its own `__name__`.
 	///
-	/// Use this with `pyo3::wrap_pyfunction` or `pyo3::wrap_pymodule`.
+	/// Use this with `pyo3::wrap_pyfunction`.
+	/// Note that you must pass a `Python` object as the second argument to the macro.
 	///
-	/// ```ignore
+	/// ```
 	/// # use inline_python::{Context, python};
 	/// use pyo3::{prelude::*, wrap_pyfunction};
 	///
@@ -141,7 +142,7 @@ impl Context {
 	/// fn main() {
 	///     let c = Context::new();
 	///
-	///     c.add_wrapped(wrap_pyfunction!(get_five));
+	///     c.add_function(wrap_pyfunction!(get_five, Python::acquire_gil().python()).unwrap());
 	///
 	///     c.run(python! {
 	///         assert get_five() == 5
@@ -151,7 +152,44 @@ impl Context {
 	///
 	/// This function temporarily acquires the GIL.
 	/// If you already have the GIL, you can use [`Context::add_wrapped_with_gil`] instead.
-	pub fn add_wrapped(&self, wrapper: &impl Fn(Python) -> PyObject) {
+	pub fn add_function(&self, func: &pyo3::types::PyCFunction) {
+		self.add_wrapped_with_gil(Python::acquire_gil().python(), &|py| func.to_object(py));
+	}
+
+	/// Add a wrapped #[pymodule] using its own `__name__`.
+	///
+	/// Use this with `pyo3::wrap_pymodule`.
+	///
+	/// ```
+	/// # use inline_python::{Context, python};
+	/// use pyo3::{prelude::*};
+	///
+	/// #[pyfunction]
+	/// fn get_five() -> i32 {
+	///     5
+	/// }
+	///
+	///	#[pymodule]
+	///	fn rust_fiver(py: Python, m: &PyModule) -> PyResult<()> {
+	///		m.add_function(pyo3::wrap_pyfunction!(get_five, m)?)?;
+	///
+	///		Ok(())
+	///	}
+	///
+	/// fn main() {
+	///     let c = Context::new();
+	///
+	///     c.add_module(pyo3::wrap_pymodule!(rust_fiver));
+	///
+	///     c.run(python! {
+	///         assert rust_fiver.get_five() == 5
+	///     });
+	/// }
+	/// ```
+	///
+	/// This function temporarily acquires the GIL.
+	/// If you already have the GIL, you can use [`Context::add_wrapped_with_gil`] instead.
+	pub fn add_module(&self, wrapper: &impl Fn(Python) -> PyObject) {
 		self.add_wrapped_with_gil(Python::acquire_gil().python(), wrapper);
 	}
 

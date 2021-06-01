@@ -9,7 +9,7 @@ fn rust_print(x: i32) {
 fn main() {
 	let c = Context::new();
 
-	c.add_wrapped(wrap_pyfunction!(rust_print));
+	c.add_function(wrap_pyfunction!(rust_print, Python::acquire_gil().python()).unwrap());
 
 	c.run(python! {
 		x = 123

@@ -16,9 +16,13 @@ name = "rust-fn"
 path = "rust-fn.rs"
 
 [[example]]
+name = "rust-module"
+path = "rust-module.rs"
+
+[[example]]
 name = "syntax-err"
 path = "syntax-err.rs"
 
 [dependencies]
 inline-python = { path = ".." }
-pyo3 = "0.13.1"
+pyo3 = "0.13.2"
